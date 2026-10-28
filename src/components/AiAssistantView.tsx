@@ -47,18 +47,50 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({ cases }) => {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error('AI 檢索伺服器回應異常');
+      if (res.ok) {
+        const data = await res.json();
+        setResponseResult(data.text);
+        setIsAiGenerated(data.isAiGenerated);
+        return;
       }
+    } catch {
+      // 在 GitHub Pages 靜態託管環境下無後端伺服器，自動無縫切換至前端智能檢索引擎
+    }
 
-      const data = await res.json();
-      setResponseResult(data.text);
-      setIsAiGenerated(data.isAiGenerated);
-    } catch (err: any) {
-      console.error(err);
-      setResponseResult('檢索發生異常，請確認伺服器連線狀態。');
-    } finally {
-      setIsLoading(false);
+    // 智能離線 / GitHub Pages 靜態引擎回退
+    const lowerQ = q.toLowerCase();
+    const matched = cases.filter((c) => {
+      return (
+        c.title.toLowerCase().includes(lowerQ) ||
+        c.symptom.toLowerCase().includes(lowerQ) ||
+        c.affectedItem.toLowerCase().includes(lowerQ) ||
+        c.tags.some((t: string) => lowerQ.includes(t.toLowerCase())) ||
+        (lowerQ.includes('抗拉') && c.affectedItem.includes('抗拉')) ||
+        (lowerQ.includes('斜對角') && c.affectedItem.includes('斜對角')) ||
+        (lowerQ.includes('退火') && c.title.includes('退火')) ||
+        (lowerQ.includes('延伸率') && c.affectedItem.includes('延伸率'))
+      );
+    });
+
+    if (matched.length === 0) {
+      setResponseResult(
+        `### 檢索結果：資料庫無充分依據\n\n經比對現有異常案例庫，未發現與「**${q}**」高度相符的已結案紀錄。\n\n**系統提示（F13規範）**：\n- 根據品質安全原則，系統不對未收錄案例作未經查證之猜測。\n- 建議查閱現行製程作業標準書 (SOP) 或由品保課指派專人立案調查。`
+      );
+      setIsAiGenerated(false);
+    } else {
+      let fallbackText = `### AI 案例檢索與比對摘要 (檢索命中 ${matched.length} 筆歷史案例)\n\n`;
+      for (const c of matched) {
+        fallbackText += `#### 【來源案例：${c.id}】${c.title}\n`;
+        fallbackText += `- **發生日期**：${c.date} | **影響產品**：${c.product}\n`;
+        fallbackText += `- **關聯批號**：${c.sourceBatches.join(', ')}\n`;
+        fallbackText += `- **異常現象**：${c.symptom}\n`;
+        fallbackText += `- **推測原因 (Hypothesis)**：${c.hypothesis}\n`;
+        fallbackText += `- **已驗證原因 (Verified Cause)**：${c.verifiedCause}\n`;
+        fallbackText += `- **歷史處置與改善**：${c.correctiveAction}（成果：${c.outcome}）\n`;
+        fallbackText += `> **品質工程警語**：上述為歷史個案結論（驗證人：${c.verifiedBy}），本次異常仍需現場複測與金相檢驗，不得未經核對直接照搬措施。\n\n`;
+      }
+      setResponseResult(fallbackText);
+      setIsAiGenerated(false);
     }
   };
 

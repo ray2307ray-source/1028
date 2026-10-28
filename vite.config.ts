@@ -5,9 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    // GitHub Pages 部署在子路徑 /1028/ 之下，必須設定 base，
-    // 否則建置後的 JS/CSS 會指向錯誤的根路徑導致頁面空白。
-    base: '/1028/',
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
