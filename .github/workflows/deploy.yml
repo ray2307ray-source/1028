@@ -7,48 +7,49 @@ on:
       - master
   workflow_dispatch:
 
-# 設定 GitHub Pages 部署權限
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
-# 避免同時間多個部署衝突
 concurrency:
   group: 'pages'
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build static site
-        run: npm run build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
-
-  deploy:
-    needs: build
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: 檢出原始碼 (Checkout repository)
+        uses: actions/checkout@v4
+
+      - name: 設定 Node.js 環境 (Setup Node.js)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 安裝專案依賴 (Install dependencies)
+        run: npm ci || npm install --legacy-peer-deps
+
+      - name: 打包靜態網站 (Build static site)
+        run: npm run build
+
+      - name: 部署至 gh-pages 分支 (Deploy to gh-pages branch)
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+        continue-on-error: true
+
+      - name: 上傳 Pages 產物 (Upload Pages artifact)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: 發布至 GitHub Pages (Deploy to Pages)
         id: deployment
         uses: actions/deploy-pages@v4
