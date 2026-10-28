@@ -1,0 +1,6 @@
+{
+  "name": "智慧品質檢驗早報與趨勢預警系統",
+  "description": "工業級檢測資料匯入登錄、資料品質把關、每日早報自動彙整、多尺度趨勢與位置比較、製程變更標註、超規緩變預警、8年歷史庫與AI案例檢索系統。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
